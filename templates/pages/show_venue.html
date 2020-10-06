@@ -1,0 +1,264 @@
+{% extends 'layouts/main.html' %}
+{% block title %}Venue Search{% endblock %}
+{% block content %}
+<div class="row">
+	<div class="col-sm-6">
+		<h1 class="monospace">
+			{{ venue.name }}
+		</h1>
+		<p class="subtitle">
+			ID: {{ venue.id }}
+		</p>
+		<div class="genres">
+			{% for genre in venue.genres %}
+			<span class="genre">{{ genre }}</span>
+			{% endfor %}
+		</div>
+		<p>
+			<i class="fas fa-globe-americas"></i> {{ venue.city }}, {{ venue.state }}
+		</p>
+		<p>
+			<i class="fas fa-map-marker"></i> {% if venue.address %}{{ venue.address }}{% else %}No Address{% endif %}
+		</p>
+		<p>
+			<i class="fas fa-phone-alt"></i> {% if venue.phone %}{{ venue.phone }}{% else %}No Phone{% endif %}
+		</p>
+		<p>
+			<i class="fas fa-link"></i> {% if venue.website %}<a href="{{ venue.website }}" target="_blank">{{ venue.website }}</a>{% else %}No Website{% endif %}
+		</p>
+		<p>
+			<i class="fab fa-facebook-f"></i> {% if venue.facebook_link %}<a href="{{ venue.facebook_link }}" target="_blank">{{ venue.facebook_link }}</a>{% else %}No Facebook Link{% endif %}
+		</p>
+		{% if venue.seeking_talent %}
+		<div class="seeking">
+			<p class="lead">Currently seeking talent</p>
+			<div class="description">
+				<i class="fas fa-quote-left"></i> {{ venue.seeking_description }} <i class="fas fa-quote-right"></i>
+			</div>
+		</div>
+		{% else %}
+		<p class="not-seeking">
+			<i class="fas fa-moon"></i> Not currently seeking talent
+		</p>
+		{% endif %}
+	</div>
+	<div class="col-sm-6">
+		<img src="{{ venue.image_link }}" alt="Venue Image" />
+	</div>
+</div>
+<section>
+	<h2 class="monospace">{{ venue.upcoming_shows_count }} Upcoming {% if venue.upcoming_shows_count == 1 %}Show{% else %}Shows{% endif %}</h2>
+	<div class="row">
+		{%for show in venue.upcoming_shows %}
+		<div class="col-sm-4">
+			<div class="tile tile-show">
+				<img src="{{ show.artist_image_link }}" alt="Show Artist Image" />
+				<h5><a href="/artists/{{ show.artist_id }}">{{ show.artist_name }}</a></h5>
+				<h6>{{ show.start_time }}</h6>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+</section>
+<section>
+	<h2 class="monospace">{{ venue.past_shows_count }} Past {% if venue.past_shows_count == 1 %}Show{% else %}Shows{% endif %}</h2>
+	<div class="row">
+		{%for show in venue.past_shows %}
+		<div class="col-sm-4">
+			<div class="tile tile-show">
+				<img src="{{ show.artist_image_link }}" alt="Show Artist Image" />
+				<h5><a href="/artists/{{ show.artist_id }}">{{ show.artist_name }}</a></h5>
+				<h6>{{ show.start_time}}</h6>
+			</div>
+		</div>
+		{% endfor %}
+	</div>
+</section>
+<section>
+    <div>
+        <p class="lead">search For an artist for the show.</p>
+        <ul class="nav navbar-nav">
+            <li>
+                <form id="searchform" class="search" method="post">
+                    <input class="form-control"
+                           type="search"
+                           name="search_term"
+                           placeholder="Find an artist"
+                           aria-label="Search" id="txt_search">
+                </form>
+            </li>
+        </ul>
+        <br><br><br>
+        <div class="form-wrapper" id="createshowForm">
+            <form id="form" method="post" class="form" data-id="{{venue.id}}">
+                <ul id="Artistslist"></ul>
+                <ul id="showtime"></ul>
+                <ul id="createshow"></ul>
+            </form>
+        </div>
+
+    </div>
+</section>
+<h3>
+	<a href="/shows/create"><button class="btn btn-default btn-lg">Post a show</button></a>
+</h3>
+<section>
+	<div class="form-wrapper">
+		<form id="form" method="delete" class="form">
+			<button id="btn_delete" type="button" class="btn btn-primary btn-lg btn-block">Delete the venue</button>
+		</form>
+	</div>
+</section>
+<script>
+    document.getElementById('btn_delete').onclick = function (e) {
+
+        console.log('event', e);
+
+
+        fetch('/venues/' + '{{ venue.id }}', {
+            method: 'DELETE',
+
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        }).then(function (response) {
+            console.log('response');
+            window.location.replace("/");
+            return response.json();
+
+        })
+            .then(function (jsonResponse) {
+                console.log(jsonResponse);
+                window.location.replace("/");
+            })
+            .catch(function () {
+
+                window.location.replace("/");
+            })
+
+    }
+	document.getElementById('createshowForm').onsubmit = function (e) {
+            e.preventDefault();
+
+            fetch('/shows/createShow', {
+                method: 'POST',
+                body: JSON.stringify({
+                    'artist_id': document.getElementById('artist_id').value,
+                    'start_time': document.getElementById('start_time').value,
+					'venue_id': e.target.dataset['id'],
+                }),
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            })
+		.then(function (response) {
+            console.log('response');
+            window.location.replace("/venues/" + e.target.dataset['id']);
+            return response.json();
+
+        })
+
+               
+        }
+
+    document.getElementById('txt_search').onkeypress = function (e) {
+        if (e.which == 10 || e.which == 13) {
+            e.preventDefault();
+            document.getElementById('txt_search').onchange(e)
+        }
+    }
+
+    document.getElementById('txt_search').onchange = function (e) {
+        e.preventDefault();
+        if (document.getElementById('artist_id') != null) {
+            document.getElementById('artist_id').remove();
+            document.getElementById('lbSelect').remove()
+        }
+        if (document.getElementById('start_time') != null) {
+            document.getElementById('start_time').remove();
+            document.getElementById('lbstartTime').remove();
+        }
+        if (document.getElementById('btnsearch') != null)
+            document.getElementById('btnsearch').remove();
+		if (document.getElementById('NO_RESULT') != null)
+            document.getElementById('NO_RESULT').remove();
+
+					
+        var search_term = document.getElementById('txt_search').value;
+        fetch('/artists/searchForArtist/' + search_term, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        })
+
+            .then(function (response) {
+
+                console.log(response);
+                
+                return response.json();
+            })
+            .then(function (jsonResponse) {
+
+                console.log(jsonResponse);
+                artists = jsonResponse['artists'];
+                if (artists.length > 0) {
+
+                    const selectItem = document.createElement('SELECT');
+                    const selectlabel = document.createElement('LABEL')
+                    selectlabel.id = 'lbSelect'
+                    selectlabel.innerHTML = "Select an Artist  :";
+                    selectItem.id = 'artist_id';
+                    for (let i = 0; i < artists.length; i++) {
+                        // create new option element
+                        var opt = document.createElement('option');
+                        opt.appendChild(document.createTextNode(artists[i]['name']));
+                        opt.value = artists[i]['id'];
+                        // add opt to end of select box (sel)
+                        selectItem.appendChild(opt);
+                        //set default
+                        if (i == 0)
+                            opt.selected = true;
+
+                    }
+                    document.getElementById('Artistslist').append(selectlabel);
+                    document.getElementById('Artistslist').append(selectItem);
+                    const start_timelabel = document.createElement('LABEL')
+                    start_timelabel.id = 'lbstartTime';
+                    start_timelabel.innerHTML = "Select the start time ";
+                    const starttimeItem = document.createElement('INPUT');
+                    starttimeItem.id= 'start_time';
+                    starttimeItem.type = "datetime-local"
+                    var now = new Date();
+                    var the_current_time = new Date(now.getTime()-now.getTimezoneOffset()*60000).toISOString().substring(0,19)
+                    starttimeItem.defaultValue = the_current_time;
+                    document.getElementById('showtime').append(start_timelabel);
+                    document.getElementById('showtime').append(starttimeItem);
+                    const createshowbtn = document.createElement('INPUT');
+                    createshowbtn.id = 'btnsearch';
+                    createshowbtn.type = "submit"
+                    createshowbtn.value = "create show";
+                 
+                    document.getElementById('createshow').append(createshowbtn);
+
+                }
+                else {
+                    const liItem = document.createElement('LI');
+					liItem.id = 'NO_RESULT'
+                    liItem.innerHTML = 'No result';
+                    document.getElementById('Artistslist').append(liItem);
+                }
+
+            })
+            .catch(function () {
+               const liItem = document.createElement('LI');
+					liItem.id = 'NO_RESULT'
+                    liItem.innerHTML = 'No result';
+                    document.getElementById('Artistslist').append(liItem);
+            })
+    }
+    
+</script>
+
+		{% endblock %}
+
